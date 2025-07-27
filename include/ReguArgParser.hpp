@@ -85,11 +85,8 @@ namespace RArg
         {
             this->RegistArg(arg);
             const auto it = std::find_first_of(args.begin(), args.end(), arg.flags.flags.begin(), arg.flags.flags.end());
-            const auto flagsStr = arg.flags.shortFlag.has_value()
-                                      ? arg.flags.shortFlag.value()
-                                  : "" + arg.flags.longFlag.has_value()
-                                      ? arg.flags.longFlag.value()
-                                      : "";
+            const auto flagsStr = (arg.flags.shortFlag.has_value() ? arg.flags.shortFlag.value() : "") +
+                                  (arg.flags.longFlag.has_value() ? arg.flags.longFlag.value() : "");
             if (it == args.end())
             {
                 std::stringstream ss;
