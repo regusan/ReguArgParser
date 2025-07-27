@@ -85,20 +85,31 @@ namespace RArg
         {
             this->RegistArg(arg);
             const auto it = std::find_first_of(args.begin(), args.end(), arg.flags.flags.begin(), arg.flags.flags.end());
+            const auto flagsStr = arg.flags.shortFlag.has_value()
+                                      ? arg.flags.shortFlag.value()
+                                  : "" + arg.flags.longFlag.has_value()
+                                      ? arg.flags.longFlag.value()
+                                      : "";
             if (it == args.end())
             {
-                throw std::runtime_error("Flag not found: ");
+                std::stringstream ss;
+                ss << "Flag \"" << flagsStr << "\" not found. Usage: " << arg.GetDisplayText();
+                throw std::runtime_error(ss.str());
             }
 
             if (it + 1 == args.end())
             {
-                throw std::runtime_error("Flag has no value: ");
+                std::stringstream ss;
+                ss << "Value for flag \"" << flagsStr << "\" not found. Usage: " << arg.GetDisplayText();
+                throw std::runtime_error(ss.str());
             }
 
             const std::string valueStr = *(it + 1);
             if (valueStr.empty())
             {
-                throw std::runtime_error("Flag not found or has no value: ");
+                std::stringstream ss;
+                ss << "Value for flag \"" << flagsStr << "\" is empty. Usage: " << arg.GetDisplayText();
+                throw std::runtime_error(ss.str());
             }
 
             std::stringstream ss(valueStr);
@@ -108,7 +119,9 @@ namespace RArg
             // ストリームの終端まで読み込めたか、かつエラーがないかチェック
             if (ss.fail() || !ss.eof())
             {
-                throw std::runtime_error("Failed to convert value '" + valueStr + "' for flag: ");
+                std::stringstream ss;
+                ss << "Failed to convert value \"" << valueStr << "\" for flag \"" << flagsStr << "\" to type " << typeid(T).name() << ". Usage: " << arg.GetDisplayText();
+                throw std::runtime_error(ss.str());
             }
 
             return value;
@@ -163,7 +176,7 @@ namespace RArg
         /// @param defaultValue フラグが存在しない場合のデフォルト値
         /// @return
         template <typename T>
-        std::vector<T> getFlagArrayValue(const Arg &arg, const std::vector<T> &defaultValue) const
+        std::vector<T> getFlagArrayValue(const Arg &arg, const std::vector<T> &defaultValue)
         {
             try
             {
