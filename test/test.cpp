@@ -91,5 +91,30 @@ int main(int argc, char const *argv[])
 {
     IUTEST_INIT(&argc, argv);
     IUTEST_RUN_ALL_TESTS();
+
+    char const *argv1[] = {"-a", "-b", "5", "-cat", "hello", "-d", "3.14", "-epic", "1,2,3,4,5"};
+    const int argc1 = 9;
+
+    RArg::ArgParser args(argc1, argv1);
+
+    // --- フラグの確認 ---
+    bool has_a = args.hasFlag({{"-a"}});
+
+    // --- 値の取得 ---
+    int b_val = args.getFlagValue<int>({{"-b"}, "discription"});                       // result: 5
+    std::string c_val = args.getFlagValue<std::string>({{"-c", "-cat"}, "help text"}); // result: "hello"
+    double d_val = args.getFlagValue<double>({{"-d", "discription"}, "discription"});  // result: 3.14
+
+    // --- 配列値の取得 ---
+    std::vector<int> e_array = args.getFlagArrayValue<int>({{"-e", "-epic"}, "discription"});
+    // result: e_array = {1, 2, 3, 4, 5}
+    // e_array.size() == 5, e_array[0] == 1, ..., e_array[4] == 5
+
+    // --- 存在しないフラグへのデフォルト値 ---
+    std::string unknown_val = args.getFlagValue<std::string>({{"-z"}, "discription"}, "default");    // result: "default"
+    std::vector<int> unknown_array = args.getFlagArrayValue<int>({{"-x"}, "discription"}, {99, 88}); // result: {99, 88}
+
+    std::cout << args.GetUsage() << std::endl;
+
     return 0;
 }
