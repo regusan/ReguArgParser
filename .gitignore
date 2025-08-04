@@ -1,5 +1,6 @@
 iuitest/*
 build/*
+.vscode/*
 
 # Prerequisites
 *.d
