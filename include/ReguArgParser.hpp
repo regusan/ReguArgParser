@@ -19,7 +19,14 @@ namespace RArg
         Flag(std::string shortFlag, std::string longFlag) : shortFlag(shortFlag), longFlag(longFlag), flags({shortFlag, longFlag}) {}
         Flag(std::string flag) : shortFlag(flag), flags({flag}) {}
     };
-
+    static std::ostream &operator<<(std::ostream &os, const Flag &flag)
+    {
+        if (flag.shortFlag.has_value())
+            os << flag.shortFlag.value() << ",";
+        if (flag.longFlag.has_value())
+            os << flag.longFlag.value();
+        return os;
+    }
     /// @brief 引数データ
     class Arg
     {
@@ -31,14 +38,13 @@ namespace RArg
         Arg(const Flag &flags, const std::string &helpText = "")
             : flags(flags),
               helpText(helpText) {}
-        std::string GetDisplayText() const
+        std::string GetDisplayText(size_t tabCount = 2) const
         {
             std::stringstream ss;
-            if (flags.shortFlag.has_value())
-                ss << flags.shortFlag.value();
-            if (flags.longFlag.has_value())
-                ss << "," << flags.longFlag.value();
-            ss << "\t\t" << helpText;
+            ss << flags;
+            for (size_t i = 0; i < tabCount; i++)
+                ss << "\t";
+            ss << helpText;
             return ss.str();
         }
     };
@@ -187,12 +193,21 @@ namespace RArg
 
         std::string GetUsage() const
         {
+            size_t maxLen = 0;
+            for (const auto &arg : argKeys)
+            {
+                std::stringstream argss;
+                argss << arg.flags;
+                maxLen = std::max(maxLen, argss.str().length());
+            }
             std::stringstream ss;
             ss << "Usage: " << this->exeName << "[option]" << std::endl;
             ss << "Options:" << std::endl;
             for (const auto &arg : argKeys)
             {
-                ss << "  " << arg.GetDisplayText() << std::endl;
+                std::stringstream argss;
+                argss << arg.flags;
+                ss << "  " << arg.GetDisplayText(((maxLen - argss.str().length()) / 8 + 1)) << std::endl;
             }
             return ss.str();
         }
