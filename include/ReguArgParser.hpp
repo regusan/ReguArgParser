@@ -9,6 +9,7 @@
 #include <optional>
 namespace RArg
 {
+    /// @brief フラグデータ
     class Flag
     {
     public:
@@ -27,6 +28,8 @@ namespace RArg
             os << flag.longFlag.value();
         return os;
     }
+
+
     /// @brief 引数データ
     class Arg
     {
@@ -53,6 +56,7 @@ namespace RArg
     class ArgParser
     {
     private:
+        const size_t TARGET_TAB_COUNT = 4;
         const std::string exeName;
         const std::vector<std::string> args = {};
         std::set<Arg> argKeys;
@@ -193,6 +197,7 @@ namespace RArg
 
         std::string GetUsage() const
         {
+            //各引数のキーの最大の文字数を求める
             size_t maxLen = 0;
             for (const auto &arg : argKeys)
             {
@@ -203,11 +208,14 @@ namespace RArg
             std::stringstream ss;
             ss << "Usage: " << this->exeName << "[option]" << std::endl;
             ss << "Options:" << std::endl;
+
             for (const auto &arg : argKeys)
             {
+                constexpr size_t space = 2;
                 std::stringstream argss;
                 argss << arg.flags;
-                ss << "  " << arg.GetDisplayText(((maxLen - argss.str().length()) / 8 + 1)) << std::endl;
+                const size_t delta = maxLen - argss.str().length();
+                ss << arg.flags << std::string(delta + space, ' ') << arg.helpText;
             }
             return ss.str();
         }
