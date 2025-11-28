@@ -29,7 +29,6 @@ namespace RArg
         return os;
     }
 
-
     /// @brief 引数データ
     class Arg
     {
@@ -37,17 +36,24 @@ namespace RArg
     public:
         const Flag flags;
         const std::string helpText;
+        const std::optional<std::string> defaultValueStr = std::nullopt;
         auto operator<=>(const Arg &) const = default;
-        Arg(const Flag &flags, const std::string &helpText = "")
+        Arg(const Flag &flags, const std::string &helpText = "", const std::optional<std::string> defaultValueStr = std::nullopt)
             : flags(flags),
-              helpText(helpText) {}
-        std::string GetDisplayText(size_t tabCount = 2) const
+              helpText(helpText),
+              defaultValueStr(defaultValueStr) {}
+        std::string GetDisplayText(size_t spaceCount = 2) const
         {
             std::stringstream ss;
             ss << flags;
-            for (size_t i = 0; i < tabCount; i++)
-                ss << "\t";
+            for (size_t i = 0; i < spaceCount; i++)
+                ss << " ";
             ss << helpText;
+
+            if (defaultValueStr.has_value())
+            {
+                ss << " (default: " << defaultValueStr.value() << ")";
+            }
             return ss.str();
         }
     };
@@ -56,7 +62,7 @@ namespace RArg
     class ArgParser
     {
     private:
-        const size_t TARGET_TAB_COUNT = 4;
+        const size_t MAX_SPACE_LEN = 16;
         const std::string exeName;
         const std::vector<std::string> args = {};
         std::set<Arg> argKeys;
@@ -85,18 +91,13 @@ namespace RArg
             return std::find_first_of(args.begin(), args.end(), arg.flags.flags.begin(), arg.flags.flags.end()) != args.end();
         }
 
-        ///@brief 指定したフラグの値を取得する
-        ///@tparam T 型
-        ///@param arg 取得したい値のフラグデータ
-        ///@return T型に変換された値
-        ///@throws std::runtime_error フラグが存在しない、値がない、または型変換に失敗した場合
         template <typename T>
-        T getFlagValue(const Arg &arg)
+        T __findFlagValue(const Arg &arg)
         {
-            this->RegistArg(arg);
             const auto it = std::find_first_of(args.begin(), args.end(), arg.flags.flags.begin(), arg.flags.flags.end());
             const auto flagsStr = (arg.flags.shortFlag.has_value() ? arg.flags.shortFlag.value() : "") +
                                   (arg.flags.longFlag.has_value() ? arg.flags.longFlag.value() : "");
+            // フラグがない場合
             if (it == args.end())
             {
                 std::stringstream ss;
@@ -104,6 +105,7 @@ namespace RArg
                 throw std::runtime_error(ss.str());
             }
 
+            // 値がない場合
             if (it + 1 == args.end())
             {
                 std::stringstream ss;
@@ -111,6 +113,7 @@ namespace RArg
                 throw std::runtime_error(ss.str());
             }
 
+            // 値の取得
             const std::string valueStr = *(it + 1);
             if (valueStr.empty())
             {
@@ -134,6 +137,18 @@ namespace RArg
             return value;
         }
 
+        ///@brief 指定したフラグの値を取得する
+        ///@tparam T 型
+        ///@param arg 取得したい値のフラグデータ
+        ///@return T型に変換された値
+        ///@throws std::runtime_error フラグが存在しない、値がない、または型変換に失敗した場合
+        template <typename T>
+        T getFlagValue(const Arg &arg)
+        {
+            this->RegistArg(arg);
+            return __findFlagValue<T>(arg);
+        }
+
         /// @brief 指定したフラグの値を取得する
         /// @tparam T 型
         /// @param arg 取得したい値の引数タイプ
@@ -142,9 +157,13 @@ namespace RArg
         template <typename T>
         T getFlagValue(const Arg &arg, const T &defaultValue)
         {
+            std::stringstream defaultValueStr;
+            defaultValueStr << defaultValue;
+            Arg argWithDefault(arg.flags, arg.helpText, defaultValueStr.str()); // 引数付きで再構築
+            this->RegistArg(argWithDefault);
             try
             {
-                return this->getFlagValue<T>(arg);
+                return this->__findFlagValue<T>(argWithDefault);
             }
             catch (const std::runtime_error &e)
             {
@@ -158,13 +177,11 @@ namespace RArg
         ///@return T型に変換された値
         ///@throws std::runtime_error フラグが存在しない、値がない、または型変換に失敗した場合
         template <typename T>
-        std::vector<T> getFlagArrayValue(const Arg &arg)
+        std::vector<T> _getFlagArrayValue(const Arg &arg)
         {
-            std::string valueStr = this->getFlagValue<std::string>(arg);
-
             // 文字列をカンマで分割し、配列に格納
             std::vector<T> arrayValue;
-            std::stringstream ssValueStr(valueStr);
+            std::stringstream ssValueStr(this->__findFlagValue<std::string>(arg));
             std::string segment;
             while (std::getline(ssValueStr, segment, ','))
             {
@@ -177,6 +194,18 @@ namespace RArg
             return arrayValue;
         }
 
+        ///@brief 指定したフラグの値を取得する
+        ///@tparam T 型
+        ///@param arg 取得したい値のフラグデータ
+        ///@return T型に変換された値
+        ///@throws std::runtime_error フラグが存在しない、値がない、または型変換に失敗した場合
+        template <typename T>
+        std::vector<T> getFlagArrayValue(const Arg &arg)
+        {
+            this->RegistArg(arg);
+            return this->_getFlagArrayValue<T>(arg);
+        }
+
         /// @brief 指定したフラグの値を取得する
         /// @tparam T 型
         /// @param arg 取得したい値の引数タイプ
@@ -185,9 +214,17 @@ namespace RArg
         template <typename T>
         std::vector<T> getFlagArrayValue(const Arg &arg, const std::vector<T> &defaultValue)
         {
+            std::stringstream defaultValueStr;
+            for (const auto &value : defaultValue)
+            {
+                defaultValueStr << value << ",";
+            }
+            defaultValueStr << defaultValue.back();
+            Arg argWithDefault(arg.flags, arg.helpText, defaultValueStr.str()); // 引数付きで再構築
+            this->RegistArg(argWithDefault);
             try
             {
-                return getFlagArrayValue<T>(arg);
+                return this->getFlagArrayValue<T>(arg);
             }
             catch (const std::runtime_error &e)
             {
@@ -197,7 +234,7 @@ namespace RArg
 
         std::string GetUsage() const
         {
-            //各引数のキーの最大の文字数を求める
+            // 各引数のキーの最大の文字数を求める
             size_t maxLen = 0;
             for (const auto &arg : argKeys)
             {
@@ -205,6 +242,7 @@ namespace RArg
                 argss << arg.flags;
                 maxLen = std::max(maxLen, argss.str().length());
             }
+            maxLen = std::min(maxLen, MAX_SPACE_LEN); // 長すぎる場合は短くする
             std::stringstream ss;
             ss << "Usage: " << this->exeName << "[option]" << std::endl;
             ss << "Options:" << std::endl;
@@ -215,7 +253,7 @@ namespace RArg
                 std::stringstream argss;
                 argss << arg.flags;
                 const size_t delta = maxLen - argss.str().length();
-                ss << arg.flags << std::string(delta + space, ' ') << arg.helpText;
+                ss << "  " << arg.GetDisplayText(delta + space) << std::endl;
             }
             return ss.str();
         }
