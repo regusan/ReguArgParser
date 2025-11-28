@@ -72,26 +72,7 @@ namespace RArg
             argKeys.insert(arg);
         }
 
-    public:
-        ArgParser(const int argc, const char **argv)
-            : exeName(argc > 0 ? argv[0] : ""),
-              args(argv + 1, argv + argc) {}
-        ArgParser(const int argc, char **argv)
-            : ArgParser(argc, const_cast<const char **>(argv)) {} // 非constにも対応させるため
-        ArgParser(std::vector<std::string> args)
-            : exeName(args.size() > 0 ? args[0] : ""),
-              args(args.begin(), args.end()) {}
-
-        /// @brief 指定したフラグが存在するかを取得
-        /// @param arg
-        /// @return フラグが存在するか
-        bool hasFlag(const Arg &arg)
-        {
-            RegistArg(arg);
-            return std::find_first_of(args.begin(), args.end(), arg.flags.flags.begin(), arg.flags.flags.end()) != args.end();
-        }
-
-        template <typename T>
+                template <typename T>
         T __findFlagValue(const Arg &arg)
         {
             const auto it = std::find_first_of(args.begin(), args.end(), arg.flags.flags.begin(), arg.flags.flags.end());
@@ -136,6 +117,47 @@ namespace RArg
 
             return value;
         }
+        
+        ///@brief 指定したフラグの値を取得する
+        ///@tparam T 型
+        ///@param arg 取得したい値のフラグデータ
+        ///@return T型に変換された値
+        ///@throws std::runtime_error フラグが存在しない、値がない、または型変換に失敗した場合
+        template <typename T>
+        std::vector<T> _getFlagArrayValue(const Arg &arg)
+        {
+            // 文字列をカンマで分割し、配列に格納
+            std::vector<T> arrayValue;
+            std::stringstream ssValueStr(this->__findFlagValue<std::string>(arg));
+            std::string segment;
+            while (std::getline(ssValueStr, segment, ','))
+            {
+                std::stringstream ss(segment);
+                T value;
+                ss >> value;
+                arrayValue.push_back(value);
+            }
+
+            return arrayValue;
+        }
+    public:
+        ArgParser(const int argc, const char **argv)
+            : exeName(argc > 0 ? argv[0] : ""),
+              args(argv + 1, argv + argc) {}
+        ArgParser(const int argc, char **argv)
+            : ArgParser(argc, const_cast<const char **>(argv)) {} // 非constにも対応させるため
+        ArgParser(std::vector<std::string> args)
+            : exeName(args.size() > 0 ? args[0] : ""),
+              args(args.begin(), args.end()) {}
+
+        /// @brief 指定したフラグが存在するかを取得
+        /// @param arg
+        /// @return フラグが存在するか
+        bool hasFlag(const Arg &arg)
+        {
+            RegistArg(arg);
+            return std::find_first_of(args.begin(), args.end(), arg.flags.flags.begin(), arg.flags.flags.end()) != args.end();
+        }
 
         ///@brief 指定したフラグの値を取得する
         ///@tparam T 型
@@ -169,29 +191,6 @@ namespace RArg
             {
                 return defaultValue;
             }
-        }
-
-        ///@brief 指定したフラグの値を取得する
-        ///@tparam T 型
-        ///@param arg 取得したい値のフラグデータ
-        ///@return T型に変換された値
-        ///@throws std::runtime_error フラグが存在しない、値がない、または型変換に失敗した場合
-        template <typename T>
-        std::vector<T> _getFlagArrayValue(const Arg &arg)
-        {
-            // 文字列をカンマで分割し、配列に格納
-            std::vector<T> arrayValue;
-            std::stringstream ssValueStr(this->__findFlagValue<std::string>(arg));
-            std::string segment;
-            while (std::getline(ssValueStr, segment, ','))
-            {
-                std::stringstream ss(segment);
-                T value;
-                ss >> value;
-                arrayValue.push_back(value);
-            }
-
-            return arrayValue;
         }
 
         ///@brief 指定したフラグの値を取得する
