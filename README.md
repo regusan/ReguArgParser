@@ -12,6 +12,9 @@ C++20 or later
 
 # Usage
 ```cpp
+
+#include "ReguArgParser.hpp"
+
 // --- 1. フラグの確認 (hasFlag) ---
 // コマンドライン引数をシミュレート: your_program -a -b --long-flag --charlie
 RArg::ArgParser args({"-a", "-b", "--long-flag", "--charlie"});
@@ -66,4 +69,17 @@ std::vector<double> floats = args.getFlagArrayValue<double>({{"-floats"}});
 std::vector<int> default_array = args.getFlagArrayValue<int>({{"-missing-array"}}, {100, 200});
 // result: default_array = {100, 200}
 // default_array.size() == 2, default_array[0] == 100, default_array[1] == 200
+
+// 今までに取得を試みた変数の一覧を表示
+std::cout << args.GetUsage() << std::endl;
+```
+
+# for test
+## installation
+iutest
+```bash
+git clone https://github.com/srz-zumix/iutest.git
+mkir build
+make
+./build/test_runner
 ```
