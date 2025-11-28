@@ -72,7 +72,7 @@ namespace RArg
             argKeys.insert(arg);
         }
 
-                template <typename T>
+        template <typename T>
         T __findFlagValue(const Arg &arg)
         {
             const auto it = std::find_first_of(args.begin(), args.end(), arg.flags.flags.begin(), arg.flags.flags.end());
@@ -117,7 +117,7 @@ namespace RArg
 
             return value;
         }
-        
+
         ///@brief 指定したフラグの値を取得する
         ///@tparam T 型
         ///@param arg 取得したい値のフラグデータ
@@ -129,17 +129,40 @@ namespace RArg
             // 文字列をカンマで分割し、配列に格納
             std::vector<T> arrayValue;
             std::stringstream ssValueStr(this->__findFlagValue<std::string>(arg));
+            std::stringstream flagStrm;
+            flagStrm << arg.flags;
+            const auto flagsStr = flagStrm.str();
+
             std::string segment;
+            size_t index = 0;
             while (std::getline(ssValueStr, segment, ','))
             {
+                ++index;
+                // 空だったらエラー
+                if (segment.empty())
+                {
+                    std::stringstream ss;
+                    ss << "Value #" << index << " for flag \"" << flagsStr << "\" is empty. Usage: " << arg.GetDisplayText();
+                    throw std::runtime_error(ss.str());
+                }
+
                 std::stringstream ss(segment);
                 T value;
                 ss >> value;
+                // 変換に失敗したらエラー
+                if (ss.fail() || !ss.eof())
+                {
+                    std::stringstream ssErr;
+                    ssErr << "Failed to convert value \"" << segment << "\" for flag \"" << flagsStr << "\" to type " << typeid(T).name() << ". Usage: " << arg.GetDisplayText();
+                    throw std::runtime_error(ssErr.str());
+                }
+
                 arrayValue.push_back(value);
             }
 
             return arrayValue;
         }
+
     public:
         ArgParser(const int argc, const char **argv)
             : exeName(argc > 0 ? argv[0] : ""),
