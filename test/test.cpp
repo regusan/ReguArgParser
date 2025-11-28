@@ -1,10 +1,8 @@
-// #include "../iutest/include/iutest.hpp"
-
 #include "../iutest/include/gtest/iutest_switch.hpp"
 
 #include <string>
 #include <vector>
-#include "ReguArgParser.hpp"
+#include "../include/ReguArgParser.hpp"
 #include <iostream>
 using namespace RArg;
 using namespace std;
@@ -113,6 +111,23 @@ int main(int argc, char const *argv[])
     // --- 存在しないフラグへのデフォルト値 ---
     std::string unknown_val = args.getFlagValue<std::string>({{"-z"}, "discription"}, "default");    // result: "default"
     std::vector<int> unknown_array = args.getFlagArrayValue<int>({{"-x"}, "discription"}, {99, 88}); // result: {99, 88}
+
+    try
+    {
+        args.getFlagValue<int>({{"-donthave"}});
+    }
+    catch (const std::exception &e)
+    {
+        std::cout << e.what() << std::endl;
+    }    
+    try
+    {
+        args.getFlagValue<int>({{"-b"}});
+    }
+    catch (const std::exception &e)
+    {
+        std::cout << e.what() << std::endl;
+    }
 
     std::cout << args.GetUsage() << std::endl;
 
