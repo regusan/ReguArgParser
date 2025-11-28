@@ -1,4 +1,4 @@
-#include "../iutest/include/gtest/iutest_switch.hpp"
+#include "../lib/iutest/include/gtest/iutest_switch.hpp"
 
 #include <string>
 #include <vector>
@@ -119,7 +119,7 @@ int main(int argc, char const *argv[])
     catch (const std::exception &e)
     {
         std::cout << e.what() << std::endl;
-    }    
+    }
     try
     {
         args.getFlagValue<int>({{"-b"}});
