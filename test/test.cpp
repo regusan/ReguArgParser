@@ -77,6 +77,16 @@ IUTEST(ArgParserTest, GetFlagValueWithDefault)
     ASSERT_EQ(args.getFlagValue<std::string>({{"-b"}}, std::string("default")), "default");
 }
 
+IUTEST(ArgParserTest, GetUsageHandlesLongFlags)
+{
+    ArgParser args({"program", "--dummy"});
+    Arg longArg(Flag("--this-is-a-very-long-flag-name"), "description");
+    args.hasFlag(longArg);
+    const auto usage = args.GetUsage();
+    ASSERT_NE(usage.find("--this-is-a-very-long-flag-name"), std::string::npos);
+    ASSERT_LT(usage.size(), 200u);
+}
+
 // エラーのテスト
 IUTEST(ArgParserTest, GetFlagValueError)
 {

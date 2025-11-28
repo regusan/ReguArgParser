@@ -264,7 +264,7 @@ namespace RArg
                 argss << arg.flags;
                 maxLen = std::max(maxLen, argss.str().length());
             }
-            maxLen = std::min(maxLen, MAX_SPACE_LEN); // 長すぎる場合は短くする
+            const size_t spaceLen = std::min(maxLen, MAX_SPACE_LEN); // 長すぎる場合は短くする
             std::stringstream ss;
             ss << "Usage: " << this->exeName << "[option]" << std::endl;
             ss << "Options:" << std::endl;
@@ -274,7 +274,7 @@ namespace RArg
                 constexpr size_t space = 2;
                 std::stringstream argss;
                 argss << arg.flags;
-                const size_t delta = maxLen - argss.str().length();
+                const int delta = std::max<int>(0, static_cast<int>(spaceLen) - static_cast<int>(argss.str().length())); // size_tのアンダーフロー回避
                 ss << "  " << arg.GetDisplayText(delta + space) << std::endl;
             }
             return ss.str();
